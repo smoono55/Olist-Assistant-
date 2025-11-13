@@ -1,0 +1,12 @@
+pandas
+numpy
+sqlalchemy
+faiss-cpu
+sentence-transformers
+openai
+gradio
+tqdm
+matplotlib
+plotly
+python-dotenv
+rapidfuzz
