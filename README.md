@@ -1,196 +1,264 @@
-# Olist-Assistant-
-A lightweight, Gradio-based assistant for exploring the Olist ecommerce dataset. It combines rule-based SQL lookups, fuzzy product search, simple RAG ideas (dataset evidence + optional SerpAPI web fallback), and small LLM steps for intent classification and answer polishing. Built to be easy to run locally for data exploration, demos, and testing.
-Project summary
+Olist Assistant – Intelligent E-Commerce Analytics & Chat Assistant
 
-Olist Assistant is an interactive chat UI that answers questions about product categories, top sellers, average order value (AOV), cheapest/most expensive items, per-city summaries, product recommendations, and customer reviews — all powered primarily by your local olist_analytics.db SQLite dataset. When a user asks something that is not in the dataset, the assistant can optionally query the web (via SerpAPI) and produce a short web summary injected into the chat.
+A full-stack AI assistant built for exploring the Olist Brazilian E-Commerce Dataset, answering analytical questions, providing recommendations, translating category names, retrieving customer review insights, and optionally searching the web using SerpAPI.
 
-Key design goals:
+Powered by Python, Fast LLM inference (OpenAI GPT models), RAG-style dataset querying, Gradio UI, and SQLite analytics.
+Key Features
+1. Dataset-Powered Q&A
 
-Dataset-first answers (no web-search noise unless asked or needed)
+The assistant can answer complex analytical questions entirely using your local Olist database, including:
 
-Transparent evidence: SQL rows are shown in the Evidence panel
+Top products sold
 
-Simple natural-language intent detection with rule+LLM fallback
+Most sold product per city
 
-Lightweight, replicable local setup (Gradio UI + sqlite DB)
+Most expensive product per city
 
-Translate Portuguese category tokens to readable English only on demand (Translate button) and only for tokens present in the chat
+Average order value (AOV) for any category & year
 
-Features
+Category listings
 
-Ask conversational questions, e.g.:
+Cheapest product (global or per city)
 
-what all products are available
+Keyword-based product search
 
-Average order value for eletronicos in 2018
+Year-based comparisons
 
-Top 5 cities by revenue in 2017
+Per-city performance
 
-most sold product in each city
+Revenue analysis
 
-cheapest product in Sao Paulo
+2. Smart Intent Recognition
 
-reviews for <product_id>
+User messages are interpreted using a hybrid rule-based + LLM intent classifier:
 
-what's good for fiber (dataset-backed recommendations)
+data_query
 
-Evidence panel: displays SQL result snippets
+recommend
 
-Translate button: translates category tokens found only in the chat (no global dump)
+translate
 
-Optional web fallback via SerpAPI; when web results are returned, the assistant adds a short LLM-generated web summary into the chat
+small_talk
 
-Review fetching and scoring (if reviews table exists in DB)
+web_search
 
-Fuzzy product name search using rapidfuzz
+unknown
 
-Persistent lightweight session memory (data/session_memory.json) to remember last categories/results
+This ensures correct routing—dataset queries go to SQL, general questions go to SerpAPI, and casual chat stays conversational.
 
-Repo contents (important files)
+3. Product Recommendations Engine
 
-src/app.py — main application (Gradio UI + agent logic)
+Understands natural language requests like:
 
-data/olist_analytics.db — not included; you must create/provide this (ETL)
+“What’s good for fiber?”
 
-data/session_memory.json — auto-created by the app
+“Recommend something for eyesight”
 
-tests/ — (optional) test scripts you may add for automated checks (SerpAPI tests, intent tests)
+“Suggest budget products”
 
-Quick start (local)
+Uses:
 
-Clone the repo:
+Unit sales
 
-git clone <your-repo-url>
-cd olist-agent
+Fuzzy name matching
 
+Token scoring
 
-Create a Python virtualenv and install:
+Category relevance
 
+Optional review score weighting
+
+4. Optional Web Search (SerpAPI)
+
+If the dataset lacks information, the assistant can perform real-time Google queries using SerpAPI and summarize results using GPT.
+
+5. Translation of Non-English Category Tokens
+
+Translates only the tokens that appear in the chat, not the entire database.
+
+Example:
+
+cama_mesa_banho → bed, bath & linen
+eletronicos → electronics
+
+Uses:
+
+Pattern detection
+
+AUTO_TRANSLATIONS map
+
+Context-aware searching inside chatbox
+
+6. Customer Reviews + Sentiment Summary
+
+If your dataset includes any reviews table (auto-detected), the assistant:
+
+Fetches product reviews
+
+Computes weighted average review score
+
+Summarizes context using LLM
+
+Works automatically with any of:
+
+olist_order_reviews
+
+order_reviews
+
+reviews
+
+order_review
+
+7. Chat Interface (Gradio)
+
+Comes with a clean WhatsApp-style UI:
+
+Left: chat messages
+
+Right: evidence table + translation panel
+
+Input box with Send, Translate, Clear
+
+Automatic conversation memory
+
+8. Context Memory
+
+Stores:
+
+Last categories fetched
+
+Last results
+
+Conversation history
+
+Stored in data/session_memory.json.
+
+9. Automated Testing
+
+Includes two test suites:
+
+Dataset Tests — Ensures all dataset queries work
+
+SerpAPI Tests — Validates live web search + summarization (if API key available)
+
+📁 Project Structure
+olist-assistant/
+│
+├── src/
+│   ├── app.py                 # Main Olist Assistant engine + UI
+│
+├── data/
+│   ├── olist_analytics.db     # SQLite database (created during ETL)
+│   ├── session_memory.json    # Persistent conversation memory
+│
+├── tests/
+│   ├── test_dataset_queries.py
+│   ├── test_serpapi_full.py   # Web search validation
+│
+├── README.md
+└── requirements.txt
+
+⚙️ Installation & Setup
+1️⃣ Clone the repo
+git clone https://github.com/<your-username>/olist-assistant.git
+cd olist-assistant
+
+2️⃣ Create a virtual environment
 python -m venv .venv
-.\.venv\Scripts\Activate.ps1   # PowerShell
-# or: source .venv/bin/activate  # mac/linux
-python -m pip install -r requirements.txt
+.\.venv\Scripts\activate
 
 
-If requirements.txt is not present, install at least:
+(On MacOS/Linux: source .venv/bin/activate)
 
-pip install gradio openai rapidfuzz requests
+3️⃣ Install requirements
+pip install -r requirements.txt
+
+4️⃣ Set environment variables
+PowerShell:
+$env:OPENAI_API_KEY="your-openai-key"
+$env:SERPAPI_API_KEY="your-serpapi-key"   # optional
+
+Bash/Mac/Linux:
+export OPENAI_API_KEY="your-openai-key"
+export SERPAPI_API_KEY="your-serpapi-key"
+
+5️⃣ Build the SQLite database
+
+Place your processed Olist database at:
+
+data/olist_analytics.db
 
 
-Provide required environment variables:
+Or generate it using your ETL pipeline.
 
-OPENAI_API_KEY — required for intent classification & formatting
-
-SERPAPI_API_KEY — optional, only if you want live web search fallback
-
-Example (PowerShell):
-
-$env:OPENAI_API_KEY = 'sk-...'
-$env:SERPAPI_API_KEY = 'your_serpapi_key_here'   # optional
-
-
-Provide the SQLite DB:
-
-Place olist_analytics.db in data/ (path: data/olist_analytics.db).
-
-The app expects common column names used in Olist ETL outputs (orders_items, optional products and reviews tables). If table/column names differ, adapt SQL or ETL.
-
-Run the app:
-
+6️⃣ Run the app
 python -u src/app.py
 
 
-Open http://127.0.0.1:7860 in a browser.
+The UI opens at:
 
-Configuration & environment
+http://127.0.0.1:7860
 
-OPENAI_API_KEY — required
+Running Tests
+Dataset Query Tests
+python tests/test_dataset_queries.py
 
-SERPAPI_API_KEY — optional
-
-LLM_CLASSIFY_MODEL, LLM_FORMAT_MODEL — optional environment variables to override the default LLM models (defaults in code: gpt-4o-mini)
-
-data/ — persistent data folder; session memory stored at data/session_memory.json
-
-Example queries & expected behavior
-
-what all products are available
-→ Returns list of categories (updates last_categories in memory). No web search.
-
-Average order value for eletronicos in 2018
-→ Uses SQL to compute AOV for category/year and replies with numeric result and evidence.
-
-Top 5 cities by revenue in 2017
-→ Returns top cities, revenue and orders.
-
-most sold product in each city
-→ Dataset-first response listing the top product per city (based on sales counts).
-
-cheapest product in Sao Paulo
-→ SQL to find the minimum price product in city.
-
-reviews for <product_id> or reviews for the most sold product
-→ Attempts to fetch reviews and compute average score if reviews table exists.
-
-what's good for fiber
-→ Dataset-backed recommendations via fuzzy search + scoring; if nothing found and SERPAPI is enabled, optionally searches the web.
-
-Translation behavior (important)
-
-Translate button translates only category-like tokens found inside the chat messages (tokens with underscores or explicit category tokens). It does not show or dump the entire translation dictionary by default.
-
-This prevents the UI from constantly showing the whole translation DB; translations appear only when the user clicks Translate after tokens appear in the chat.
-
-Troubleshooting (common issues you've seen)
-
-ModuleNotFoundError: No module named 'src' when running tests
-Run tests from repo root and ensure PYTHONPATH contains the project root. Example:
-
-python -m pytest tests
-# or set PYTHONPATH for imports in test files:
-$env:PYTHONPATH = (Get-Location).Path
+SerpAPI Web Search Tests
 python tests/test_serpapi_full.py
 
+Example Questions the Assistant Can Answer
+Dataset Questions
 
-Gradio Chatbot tuple/format errors
-Use type="messages" for the Chatbot component and pass messages in the OpenAI-style dict format {"role":"user","content":...} / {"role":"assistant","content":...} as implemented.
+✔ “Top 5 cities by revenue in 2017”
+✔ “Most sold product per city”
+✔ “Cheapest product”
+✔ “Average order value for eletronicos in 2018”
+✔ “List top 10 expensive products”
+✔ “Reviews of the most sold product”
 
-Nothing shows in Evidence panel
-Ensure your data/olist_analytics.db has the expected orders_items table and column names. If columns differ, adapt src/app.py SQL or your ETL output.
+Recommendation Questions
 
-Web search not returning results
-Make sure SERPAPI_API_KEY is set and valid. The test script may return empty results if search quota is exhausted or the API key is invalid.
+✔ “What’s good for fiber?”
+✔ “Suggest something for eyesight”
+✔ “Show me budget options for electronics”
 
-Translations panel shows everything
-The current code restricts translations to tokens found in chat messages. If you see more, confirm you are running the latest src/app.py.
+Web Search Questions
 
-Testing
+✔ “Who is Jeff Bezos?”
+✔ “Latest news about OpenAI”
+✔ “What is quantum computing?”
 
-You can add test scripts in tests/ that import functions from src/app.py (ensure tests run from repo root or PYTHONPATH is set). Example tests to include:
+Troubleshooting
+Environment variables not detected?
 
-Intent classification tests (various user phrasings → expected task)
+Run:
 
-Dataset query tests (mock DB or small sample DB)
+Get-ChildItem Env:
 
-SerpAPI integration tests (requires valid SERPAPI_API_KEY)
+Chatbot doesn’t respond?
 
-Translate button behavior tests (simulate chat messages containing category tokens)
+Look for errors in:
 
-Development notes & extension ideas
+console output
 
-Add caching for web-search results and LLM web-summaries to minimize API calls and costs.
+Web search not working?
 
-Improve product-name matching by indexing product names or using a small vector index.
+Ensure:
 
-Add authentication and persistent user sessions for multi-user deployments.
+SERPAPI_API_KEY is set
+SerpAPI quota is available
 
-Provide export (CSV/PDF) for evidence and summaries.
+SQLite errors?
 
-License & acknowledgements
+Ensure olist_analytics.db contains required tables:
 
-This project is provided as-is for educational and demo purposes. Choose an appropriate license (MIT, Apache 2.0, etc.) for your repo.
-Thanks to the open-source tools used: Gradio, RapidFuzz, and OpenAI.
+orders_items (mandatory)
 
-Short project blurb (for GitHub project description)
+olist_order_reviews or similar (optional)
 
-Olist Assistant — conversational dataset assistant for the Olist ecommerce dataset. Ask natural-language questions about categories, top-sellers, AOV, cheapest/most expensive products, per-city statistics, and customer reviews. Dataset-first responses with optional SerpAPI web fallback and short LLM-generated summaries injected into the chat.
+🏁 Final Notes
+
+✔ Zero breaking changes to the core logic
+✔ Fully modular and ready for deployment
+✔ Works offline (dataset queries) + online (SerpAPI search)
+✔ Dynamic, scalable, and easily extensible
